@@ -39,7 +39,7 @@ class ModelTrainer:
             # model list
             models = {
                 "Linear Regression" : LinearRegression(),
-                "KNeightbors Regression" : KNeighborsRegressor(),
+                "KNeighbors Regression" : KNeighborsRegressor(),
                 "Decision Tree" : DecisionTreeRegressor(),
                 "Random Forest" : RandomForestRegressor(),
                 "AdaBoost Regressor" : AdaBoostRegressor(),
@@ -70,7 +70,7 @@ class ModelTrainer:
                     'n_estimators': [8,16,32,64,128,256]
                 },
                 "Linear Regression":{},
-                "KNeightbors Regression":{},
+                "KNeighbors Regression":{},
                 "XGBRegressor":{
                     'learning_rate':[.1,.01,.05,.001],
                     'n_estimators': [8,16,32,64,128,256]
@@ -90,7 +90,7 @@ class ModelTrainer:
 
             # training and getting the model report
             logging.info("Model evaluation started")
-            model_report: dict = evaluate_model(X_train, y_train, X_test, y_test, models, params)
+            model_report, trained_model = evaluate_model(X_train, y_train, X_test, y_test, models, params)
 
             # getting the best model from the model report
             best_model = max(model_report, key= model_report.get)
@@ -102,7 +102,7 @@ class ModelTrainer:
             logging.info("Best model selected based on test R2 score")
             
             # training the best model
-            model = models[best_model]
+            model = trained_model[best_model]
 
             # saving the model
             logging.info("Saving trained model")
