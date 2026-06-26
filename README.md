@@ -120,6 +120,7 @@ The training pipeline runs in three sequential stages:
 - Saves the raw data to `artifacts/raw.csv`
 - Splits into train/test (80/20, `random_state=42`)
 - Persists splits to `artifacts/train.csv` and `artifacts/test.csv`
+- Returns the train/test paths as a tuple — orchestration is delegated to `src/pipeline/train_pipeline.py`
 
 ### 2. Data Transformation (`src/components/data_transformation.py`)
 Builds a scikit-learn `ColumnTransformer` with two pipelines:
@@ -137,6 +138,10 @@ The fitted preprocessor is saved to `artifacts/preprocessor.pkl`.
 - Selects the best model based on test R² score (threshold ≥ 0.6)
 - Saves the winning model to `artifacts/model.pkl`
 
+### 4. Training Pipeline (`src/pipeline/train_pipeline.py`)
+- The `TrainPipeline.start_training()` class method wires the three components together in sequence
+- Run via `python src/pipeline/train_pipeline.py`, or import and call it from another script
+
 ---
 
 ## Models Evaluated
@@ -145,8 +150,8 @@ The fitted preprocessor is saved to `artifacts/preprocessor.pkl`.
 |---|---|
 | Linear Regression | — |
 | K-Neighbors Regressor | — |
-| Decision Tree Regressor | `criterion` |
-| Random Forest Regressor | `n_estimators` |
+| Decision Tree Regressor | `criterion`, `splitter`, `max_features` |
+| Random Forest Regressor | `criterion`, `max_features`, `n_estimators` |
 | AdaBoost Regressor | `learning_rate`, `n_estimators` |
 | Gradient Boosting Regressor | `learning_rate`, `subsample`, `n_estimators` |
 | XGBoost Regressor | `learning_rate`, `n_estimators` |
@@ -199,14 +204,22 @@ Selection metric: **R² score** on the test set.
 Run the end-to-end training pipeline:
 
 ```bash
-python src/components/data_ingestion.py
+python src/pipeline/train_pipeline.py
 ```
 
-This will:
-- Ingest and split the data
-- Fit the preprocessor
-- Train and tune all 8 models
-- Save the best model + preprocessor into the `artifacts/` folder
+This orchestrates all three stages:
+- **Data Ingestion** (`DataIngestion`) — reads `notebook/data/stud.csv`, saves `artifacts/raw.csv`, splits 80/20 (`random_state=42`), persists `artifacts/train.csv` and `artifacts/test.csv`. Returns the train/test paths as a tuple.
+- **Data Transformation** (`DataTransformation`) — fits the `ColumnTransformer` (numerical + categorical pipelines), saves `artifacts/preprocessor.pkl`, and returns transformed train/test arrays.
+- **Model Training** (`ModelTrainer`) — runs `GridSearchCV` over all 8 models, picks the best by test R² (threshold ≥ 0.6), and saves `artifacts/model.pkl`.
+
+You can also call the pipeline programmatically:
+
+```python
+from src.pipeline.train_pipeline import TrainPipeline
+
+pipeline = TrainPipeline()
+print(pipeline.start_training())
+```
 
 ### 2. Launch the Flask web app
 
